@@ -3,42 +3,428 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎯 GestureFlow - GitHub Pages</title>
+  <title>🎯 GestureFlow - Real Gesture Detection</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}.container{background:white;border-radius:20px;padding:40px;max-width:900px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)}h1{text-align:center;color:#667eea;margin-bottom:10px;font-size:2.5em}.subtitle{text-align:center;color:#666;margin-bottom:30px}.controls{display:flex;gap:10px;margin-bottom:20px;justify-content:center}button{background:#667eea;color:white;border:none;padding:12px 30px;border-radius:25px;font-size:1em;cursor:pointer;transition:all 0.3s ease}button:hover{background:#764ba2;transform:translateY(-2px)}button.stop{background:#ff6b6b}#video{width:100%;max-height:400px;border-radius:15px;background:#000;margin:20px 0}#status{text-align:center;margin:15px 0;padding:10px;border-radius:5px;font-weight:bold}#status.active{background:#d4edda;color:#155724}#status.inactive{background:#f8d7da;color:#721c24}.gesture-display{text-align:center;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border-radius:15px;min-height:80px;display:flex;flex-direction:column;justify-content:center;align-items:center}.gesture-name{font-size:2em;font-weight:bold;margin-bottom:10px}.gesture-confidence{font-size:0.9em;opacity:0.9}.analytics{background:#f9f9f9;padding:20px;border-radius:15px;margin-top:20px}.analytics h2{color:#667eea;margin-bottom:15px;border-bottom:2px solid #667eea;padding-bottom:10px}.gesture-list{max-height:250px;overflow-y:auto}.gesture-item{padding:10px;background:white;border-left:4px solid #667eea;margin:8px 0;border-radius:5px;display:flex;justify-content:space-between;align-items:center}.gesture-item .confidence{background:#667eea;color:white;padding:3px 10px;border-radius:20px;font-size:0.85em}
+    *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI';background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}.container{background:white;border-radius:20px;padding:30px;max-width:1000px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)}h1{text-align:center;color:#667eea;font-size:2.5em;margin-bottom:5px}.subtitle{text-align:center;color:#666;margin-bottom:20px}.controls{display:flex;gap:10px;margin-bottom:20px;justify-content:center}button{background:#667eea;color:white;border:none;padding:12px 25px;border-radius:25px;cursor:pointer;transition:all 0.3s}button:hover{background:#764ba2;transform:translateY(-2px)}button.stop{background:#ff6b6b}#canvas{width:100%;max-width:640px;height:auto;border-radius:15px;background:#000;display:block;margin:20px auto}#status{text-align:center;padding:10px;margin:15px 0;border-radius:5px;font-weight:bold}#status.active{background:#d4edda;color:#155724}#status.inactive{backgro<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎯 GestureFlow - Real Gesture Detection</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 1000px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      text-align: center;
+      color: #667eea;
+      font-size: 2.5em;
+      margin-bottom: 5px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    button:hover {
+      background: #764ba2;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    button.stop { background: #ff6b6b; }
+    button.stop:hover { background: #ff5252; }
+    #canvas {
+      width: 100%;
+      max-width: 640px;
+      height: auto;
+      border-radius: 15px;
+      background: #000;
+      display: block;
+      margin: 20px auto;
+    }
+    #status {
+      text-align: center;
+      padding: 10px;
+      margin: 15px 0;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    #status.active { background: #d4edda; color: #155724; }
+    #status.inactive { background: #f8d7da; color: #721c24; }
+    #status.needs-confirm { background: #fff3cd; color: #856404; }
+    .gesture-display {
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 15px;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0;
+    }
+    .gesture-name {
+      font-size: 2.5em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      min-height: 50px;
+    }
+    .gesture-confidence {
+      font-size: 1.1em;
+      opacity: 0.9;
+      margin-bottom: 5px;
+    }
+    .confirmation-progress { font-size: 0.9em; margin-top: 10px; }
+    .analytics {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 15px;
+      margin-top: 20px;
+    }
+    .analytics h2 {
+      color: #667eea;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    .gesture-list { max-height: 250px; overflow-y: auto; }
+    .gesture-item {
+      padding: 10px;
+      background: white;
+      border-left: 4px solid #667eea;
+      margin: 8px 0;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .gesture-item .confidence {
+      background: #667eea;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.85em;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🎯 GestureFlow</h1>
-    <p class="subtitle">Real-time Hand Gesture Recognition - GitHub Pages Edition</p>
+    <p class="subtitle">Real Hand Gesture Recognition - Powered by MediaPipe</p>
     <div class="controls">
-      <button onclick="startGestures()">▶ Start</button>
-      <button onclick="stopGestures()" class="stop">■ Stop</button>
+      <button onclick="startCamera()">▶ Start</button>
+      <button onclick="stopCamera()" class="stop">■ Stop</button>
       <button onclick="clearHistory()">🗑 Clear</button>
     </div>
     <div id="status" class="status inactive">⚫ Ready to Start</div>
-    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
     <div class="gesture-display">
-      <div class="gesture-name" id="gestureName">Waiting...</div>
+      <div class="gesture-name" id="gestureName">No Hand Detected</div>
       <div class="gesture-confidence" id="gestureConfidence">-</div>
+      <div class="confirmation-progress" id="confirmProgress"></div>
     </div>
     <div class="analytics">
       <h2>📊 Gesture History</h2>
       <div class="gesture-list" id="gestureList">
-        <p style="color:#999;text-align:center;">No gestures detected yet</p>
+        <p style="color:#999;text-align:center;">No confirmed gestures yet</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const statusEl = document.getElementById('status');
+    const gestureNameEl = document.getElementById('gestureName');
+    const gestureConfidenceEl = document.getElementById('gestureConfidence');
+    const confirmProgressEl = document.getElementById('confirmProgress');
+    const gestureListEl = document.getElementById('gestureList');
+
+    let camera, hands, isRunning = false;
+    let gestureHistory = [];
+    let lastGesture = null;
+    let confirmationCount = 0;
+    const CONFIRMATION_THRESHOLD = 3;
+    const CONFIDENCE_THRESHOLD = 0.8;
+
+    const Hands = window.Hands;
+    const drawingUtils = window.drawingUtils;
+    const Camera = window.Camera;
+
+    async function startCamera() {
+      try {
+        isRunning = true;
+        statusEl.textContent = '🟢 Running - Detecting hands...';
+        statusEl.className = 'status active';
+
+        hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5
+        });
+
+        hands.onResults(onResults);
+
+        camera = new Camera(canvas, {
+          onFrame: async () => {
+            await hands.send({ image: canvas });
+          },
+          width: 640,
+          height: 480
+        });
+
+        await camera.initialize();
+        camera.start();
+      } catch (error) {
+        console.error(error);
+        alert('Camera error: ' + error.message);
+        isRunning = false;
+        statusEl.textContent = '❌ Error';
+        statusEl.className = 'status inactive';
+      }
+    }
+
+    function onResults(results) {
+      if (!isRunning) return;
+
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        const confidence = results.multiHandedness[0].score;
+
+        drawingUtils.drawConnectors(ctx, landmarks, Hands.HAND_CONNECTIONS, {
+          color: '#00FF00',
+          lineWidth: 3
+        });
+
+        drawingUtils.drawLandmarks(ctx, landmarks, {
+          color: '#FF0000',
+          lineWidth: 2
+        });
+
+        const gesture = detectGesture(landmarks);
+
+        if (confidence >= CONFIDENCE_THRESHOLD) {
+          if (lastGesture === gesture.name) {
+            confirmationCount++;
+            confirmProgressEl.textContent = `Confirm: ${confirmationCount}/${CONFIRMATION_THRESHOLD}`;
+            if (confirmationCount >= CONFIRMATION_THRESHOLD) {
+              confirmGestureDetection(gesture);
+              lastGesture = null;
+              confirmationCount = 0;
+              confirmProgressEl.textContent = '';
+            }
+          } else {
+            lastGesture = gesture.name;
+            confirmationCount = 1;
+            confirmProgressEl.textContent = `Confirm: ${confirmationCount}/${CONFIRMATION_THRESHOLD}`;
+          }
+
+          gestureNameEl.textContent = gesture.name;
+          gestureConfidenceEl.textContent = `Confidence: ${(confidence * 100).toFixed(1)}%`;
+          statusEl.textContent = `🟡 Detecting... (Confirm ${confirmationCount}/${CONFIRMATION_THRESHOLD})`;
+          statusEl.className = 'status needs-confirm';
+        } else {
+          gestureNameEl.textContent = 'Low Confidence (' + (confidence * 100).toFixed(0) + '%)';
+          gestureConfidenceEl.textContent = 'Need higher confidence';
+          statusEl.textContent = '🟡 Waiting for higher confidence...';
+          statusEl.className = 'status inactive';
+        }
+      } else {
+        gestureNameEl.textContent = 'No Hand Detected';
+        gestureConfidenceEl.textContent = '-';
+        confirmProgressEl.textContent = '';
+        lastGesture = null;
+        confirmationCount = 0;
+        statusEl.textContent = '🔍 Looking for hands...';
+        statusEl.className = 'status inactive';
+      }
+    }
+
+    function detectGesture(landmarks) {
+      const thumb = landmarks[4];
+      const index = landmarks[8];
+      const middle = landmarks[12];
+      const ring = landmarks[16];
+      const pinky = landmarks[20];
+      const palm = landmarks[0];
+
+      const thumbOpen = thumb.y < palm.y && thumb.x < palm.x;
+      const indexOpen = index.y < middle.y;
+      const middleOpen = middle.y < ring.y;
+      const ringOpen = ring.y < pinky.y;
+      const pinkyOpen = pinky.y < ring.y;
+
+      if (!indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+        return { name: '✊ Fist', confidence: 0.95 };
+      } else if (indexOpen && middleOpen && !ringOpen && !pinkyOpen) {
+        return { name: '✌️ Peace', confidence: 0.92 };
+      } else if (indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+        return { name: '👉 Pointing', confidence: 0.88 };
+      } else if (thumbOpen && indexOpen && middleOpen && ringOpen && pinkyOpen) {
+        return { name: '✋ Open Hand', confidence: 0.90 };
+      } else if (indexOpen && middleOpen && ringOpen && pinkyOpen && !thumbOpen) {
+        return { name: '🤘 Rock', confidence: 0.85 };
+      } else if (thumbOpen && (indexOpen || middleOpen)) {
+        return { name: '👍 Thumbs Up', confidence: 0.87 };
+      }
+      return { name: '👆 Other Gesture', confidence: 0.70 };
+    }
+
+    function confirmGestureDetection(gesture) {
+      gestureHistory.unshift({
+        ...gesture,
+        time: new Date().toLocaleTimeString()
+      });
+      if (gestureHistory.length > 20) gestureHistory.pop();
+      updateGestureList();
+
+      statusEl.textContent = '✅ Gesture Confirmed: ' + gesture.name;
+      statusEl.className = 'status active';
+
+      setTimeout(() => {
+        if (isRunning) {
+          statusEl.textContent = '🟢 Running - Detecting hands...';
+          statusEl.className = 'status active';
+        }
+      }, 1500);
+    }
+
+    function updateGestureList() {
+      if (gestureHistory.length === 0) {
+        gestureListEl.innerHTML = '<p style="color:#999;text-align:center;">No confirmed gestures yet</p>';
+        return;
+      }
+      gestureListEl.innerHTML = gestureHistory.map(g => 
+        `<div class="gesture-item"><span>${g.name}</span><div><span class="confidence">${(g.confidence * 100).toFixed(0)}%</span><span style="margin-left:10px;color:#999;font-size:0.85em;">${g.time}</span></div></div>`
+      ).join('');
+    }
+
+    function stopCamera() {
+      isRunning = false;
+      if (camera) {
+        camera.stop();
+        camera = null;
+      }
+      if (hands) hands.close();
+      statusEl.textContent = '🚠 Stopped';
+      statusEl.className = 'status inactive';
+      gestureNameEl.textContent = 'Waiting to Start';
+      gestureConfidenceEl.textContent = '-';
+      confirmProgressEl.textContent = '';
+      lastGesture = null;
+      confirmationCount = 0;
+    }
+
+    function clearHistory() {
+      gestureHistory = [];
+      updateGestureList();
+      lastGesture = null;
+      confirmationCount = 0;
+    }
+  </script>
+</body>
+</html>und:#f8d7da;color:#721c24}#status.needs-confirm{background:#fff3cd;color:#856404}.gesture-display{text-align:center;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border-radius:15px;min-height:100px;display:flex;flex-direction:column;justify-content:center;align-items:center;margin:20px 0}.gesture-name{font-size:2.5em;font-weight:bold;margin-bottom:10px;min-height:50px}.gesture-confidence{font-size:1.1em;opacity:0.9;margin-bottom:5px}.confirmation-progress{font-size:0.9em;margin-top:10px}.analytics{background:#f9f9f9;padding:20px;border-radius:15px;margin-top:20px}.analytics h2{color:#667eea;margin-bottom:15px;border-bottom:2px solid #667eea;padding-bottom:10px}.gesture-list{max-height:250px;overflow-y:auto}.gesture-item{padding:10px;background:white;border-left:4px solid #667eea;margin:8px 0;border-radius:5px;display:flex;justify-content:space-between;align-items:center}.gesture-item .confidence{background:#667eea;color:white;padding:3px 10px;border-radius:20px;font-size:0.85em}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 GestureFlow</h1>
+    <p class="subtitle">Real Hand Gesture Recognition - Powered by MediaPipe</p>
+    <div class="controls">
+      <button onclick="startCamera()">▶ Start</button>
+      <button onclick="stopCamera()" class="stop">■ Stop</button>
+      <button onclick="clearHistory()">🗑 Clear</button>
+    </div>
+    <div id="status" class="status inactive">⚫ Ready to Start</div>
+    <canvas id="canvas"></canvas>
+    <div class="gesture-display">
+      <div class="gesture-name" id="gestureName">No Hand Detected</div>
+      <div class="gesture-confidence" id="gestureConfidence">-</div>
+      <div class="confirmation-progress" id="confirmProgress"></div>
+    </div>
+    <div class="analytics">
+      <h2>📊 Gesture History</h2>
+      <div class="gesture-list" id="gestureList">
+        <p style="color:#999;text-align:center;">No confirmed gestures yet</p>
       </div>
     </div>
   </div>
   <script>
-    let isRunning=false,gestureHistory=[],videoStream=null;
-    const video=document.getElementById('video'),statusEl=document.getElementById('status'),gestureNameEl=document.getElementById('gestureName'),gestureConfidenceEl=document.getElementById('gestureConfidence'),gestureListEl=document.getElementById('gestureList');
-    const mockGestures=[{name:'Peace ✌️',confidence:0.92},{name:'Rock 🤘',confidence:0.87},{name:'Thumbs Up 👍',confidence:0.95},{name:'Open Hand ✋',confidence:0.89},{name:'Fist ✊',confidence:0.91},{name:'Pointing 👉',confidence:0.85}];
-    async function startGestures(){try{isRunning=true;statusEl.textContent='🟢 Running - Detecting gestures...';statusEl.className='status active';const stream=await navigator.mediaDevices.getUserMedia({video:true});videoStream=stream;video.srcObject=stream;detectGestures()}catch(error){alert('Camera denied');statusEl.textContent='❌ Camera Access Denied';statusEl.className='status inactive';isRunning=false}}
-    function detectGestures(){if(!isRunning)return;const g=mockGestures[Math.floor(Math.random()*mockGestures.length)],v=0.02*(Math.random()-0.5),c=Math.min(1,Math.max(0,g.confidence+v));gestureNameEl.textContent=g.name;gestureConfidenceEl.textContent='Confidence: '+(c*100).toFixed(1)+'%';gestureHistory.unshift({name:g.name,confidence:c,time:new Date().toLocaleTimeString()});if(gestureHistory.length>20)gestureHistory.pop();updateGestureList();setTimeout(detectGestures,1500+Math.random()*1000)}
-    function updateGestureList(){if(gestureHistory.length===0){gestureListEl.innerHTML='<p style="color:#999;text-align:center;">No gestures detected yet</p>';return}gestureListEl.innerHTML=gestureHistory.map(g=>`<div class="gesture-item"><span>${g.name}</span><div><span class="confidence">${(g.confidence*100).toFixed(1)}%</span><span style="margin-left:10px;color:#999;font-size:0.85em;">${g.time}</span></div></div>`).join('')}
-    function stopGestures(){isRunning=false;statusEl.textContent='🔴 Stopped';statusEl.className='status inactive';if(videoStream){videoStream.getTracks().forEach(track=>track.stop());videoStream=null}}
-    function clearHistory(){gestureHistory=[];updateGestureList();gestureNameEl.textContent='Waiting...';gestureConfidenceEl.textContent='-'}
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const statusEl = document.getElementById('status');
+    const gestureNameEl = document.getElementById('gestureName');
+    const gestureConfidenceEl = document.getElementById('gestureConfidence');
+    const confirmProgressEl = document.getElementById('confirmProgress');
+    const gestureListEl = document.getElementById('gestureList');
+    let camera, hands, isRunning = false;
+    let gestureHistory = [];
+    let lastGesture = null;
+    let confirmationCount = 0;
+    const CONFIRMATION_THRESHOLD = 3;
+    const CONFIDENCE_THRESHOLD = 0.8;
+    const Hands = window.Hands;
+    const drawingUtils = window.drawingUtils;
+    const Camera = window.Camera;
+    async function startCamera() {
+      try {isRunning = true;statusEl.textContent = '🟢 Running - Detecting hands...';statusEl.className = 'status active';hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});hands.onResults(onResults);camera = new Camera(canvas, {onFrame: async () => {await hands.send({image: canvas});}, width: 640, height: 480});await camera.initialize();camera.start();} catch (error) {console.error(error);alert('Camera error: ' + error.message);isRunning = false;statusEl.textContent = '❌ Error';statusEl.className = 'status inactive';}}
+    function onResults(results) {
+      if (!isRunning) return;canvas.width = canvas.offsetWidth;canvas.height = canvas.offsetHeight;ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {const landmarks = results.multiHandLandmarks[0];const confidence = results.multiHandedness[0].score;drawingUtils.drawConnectors(ctx, landmarks, Hands.HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 3});drawingUtils.drawLandmarks(ctx, landmarks, {color: '#FF0000', lineWidth: 2});const gesture = detectGesture(landmarks);if (confidence >= CONFIDENCE_THRESHOLD) {if (lastGesture === gesture.name) {confirmationCount++;confirmProgressEl.textContent = `Confirm: ${confirmationCount}/${CONFIRMATION_THRESHOLD}`;if (confirmationCount >= CONFIRMATION_THRESHOLD) {confirmGestureDetection(gesture);lastGesture = null;confirmationCount = 0;confirmProgressEl.textContent = '';}} else {lastGesture = gesture.name;confirmationCount = 1;confirmProgressEl.textContent = `Confirm: ${confirmationCount}/${CONFIRMATION_THRESHOLD}`;}gestureNameEl.textContent = gesture.name;gestureConfidenceEl.textContent = `Confidence: ${(confidence * 100).toFixed(1)}%`;statusEl.textContent = '🟡 Detecting... (Confirm ' + confirmationCount + '/' + CONFIRMATION_THRESHOLD + ')';statusEl.className = 'status needs-confirm';} else {gestureNameEl.textContent = 'Low Confidence (' + (confidence * 100).toFixed(0) + '%)';gestureConfidenceEl.textContent = 'Need higher confidence';statusEl.textContent = '🟡 Waiting for higher confidence...';statusEl.className = 'status inactive';}} else {gestureNameEl.textContent = 'No Hand Detected';gestureConfidenceEl.textContent = '-';confirmProgressEl.textContent = '';lastGesture = null;confirmationCount = 0;statusEl.textContent = '🔍 Looking for hands...';statusEl.className = 'status inactive';}}
+    function detectGesture(landmarks) {const thumb = landmarks[4];const index = landmarks[8];const middle = landmarks[12];const ring = landmarks[16];const pinky = landmarks[20];const palm = landmarks[0];const thumbOpen = thumb.y < palm.y && thumb.x < palm.x;const indexOpen = index.y < middle.y;const middleOpen = middle.y < ring.y;const ringOpen = ring.y < pinky.y;const pinkyOpen = pinky.y < ring.y;if (!indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {return {name: '✊ Fist', confidence: 0.95};} else if (indexOpen && middleOpen && !ringOpen && !pinkyOpen) {return {name: '✌️ Peace', confidence: 0.92};} else if (indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {return {name: '👉 Pointing', confidence: 0.88};} else if (thumbOpen && indexOpen && middleOpen && ringOpen && pinkyOpen) {return {name: '✋ Open Hand', confidence: 0.90};} else if (indexOpen && middleOpen && ringOpen && pinkyOpen && !thumbOpen) {return {name: '🤘 Rock', confidence: 0.85};} else if (thumbOpen && (indexOpen || middleOpen)) {return {name: '👍 Thumbs Up', confidence: 0.87};}return {name: '👆 Other Gesture', confidence: 0.70};}
+    function confirmGestureDetection(gesture) {gestureHistory.unshift({...gesture, time: new Date().toLocaleTimeString()});if (gestureHistory.length > 20) gestureHistory.pop();updateGestureList();statusEl.textContent = '✅ Gesture Confirmed: ' + gesture.name;statusEl.className = 'status active';setTimeout(() => {if (isRunning) {statusEl.textContent = '🟢 Running - Detecting hands...';statusEl.className = 'status active';}}, 1500);}
+    function updateGestureList() {if (gestureHistory.length === 0) {gestureListEl.innerHTML = '<p style="color:#999;text-align:center;">No confirmed gestures yet</p>';return;}gestureListEl.innerHTML = gestureHistory.map(g => `<div class="gesture-item"><span>${g.name}</span><div><span class="confidence">${(g.confidence * 100).toFixed(0)}%</span><span style="margin-left:10px;color:#999;font-size:0.85em;">${g.time}</span></div></div>`).join('');}
+    function stopCamera() {isRunning = false;if (camera) {camera.stop();camera = null;}if (hands) hands.close();statusEl.textContent = '🔴 Stopped';statusEl.className = 'status inactive';gestureNameEl.textContent = 'Waiting to Start';gestureConfidenceEl.textContent = '-';confirmProgressEl.textContent = '';lastGesture = null;confirmationCount = 0;}
+    function clearHistory() {gestureHistory = [];updateGestureList();lastGesture = null;confirmationCount = 0;}
   </script>
 </body>
 </html>
