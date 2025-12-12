@@ -14,6 +14,7 @@
         h1 { font-size: 2.5em; margin-bottom: 5px; }
         p { font-size: 0.95em; }
         .main { display: flex; gap: 20px; padding: 20px; flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; }
+        video { display: none; }
         #canvas { background: #000; border-radius: 10px; width: 100%; max-width: 600px; cursor: pointer; }
         .video-panel { flex: 1; background: #fff; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .stats-panel { flex: 1; background: #fff; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow-y: auto; }
@@ -37,6 +38,7 @@
     <div class="main">
         <div class="video-panel">
             <h2>📹 Live Hand Detection</h2>
+            <video id="video" width="600" height="500"></video>
             <canvas id="canvas" width="600" height="500"></canvas>
             <div style="margin-top:15px">
                 <button id="startBtn" onclick="startCamera()">▶ Start Detection</button>
@@ -74,6 +76,7 @@
     </div>
 
     <script>
+        const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         let camera = null;
@@ -99,10 +102,10 @@
                 }
 
                 if (!camera) {
-                    camera = new Camera(canvas, {
+                    camera = new Camera(video, {
                         onFrame: async () => {
                             if (isRunning) {
-                                await hands.send({ image: canvas });
+                                await hands.send({ image: video });
                             }
                         },
                         width: 600,
@@ -121,7 +124,6 @@
         }
 
         function onResults(results) {
-            ctx.save();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(results.image, 0, 0);
 
@@ -150,7 +152,6 @@
                 document.getElementById('currentGesture').textContent = '-';
                 document.getElementById('confidence').textContent = 'Confidence: -';
             }
-            ctx.restore();
         }
 
         function drawHand(landmarks) {
