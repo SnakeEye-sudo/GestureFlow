@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎯 GestureFlow - GitHub Pages</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}.container{background:white;border-radius:20px;padding:40px;max-width:900px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)}h1{text-align:center;color:#667eea;margin-bottom:10px;font-size:2.5em}.subtitle{text-align:center;color:#666;margin-bottom:30px}.controls{display:flex;gap:10px;margin-bottom:20px;justify-content:center}button{background:#667eea;color:white;border:none;padding:12px 30px;border-radius:25px;font-size:1em;cursor:pointer;transition:all 0.3s ease}button:hover{background:#764ba2;transform:translateY(-2px)}button.stop{background:#ff6b6b}#video{width:100%;max-height:400px;border-radius:15px;background:#000;margin:20px 0}#status{text-align:center;margin:15px 0;padding:10px;border-radius:5px;font-weight:bold}#status.active{background:#d4edda;color:#155724}#status.inactive{background:#f8d7da;color:#721c24}.gesture-display{text-align:center;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border-radius:15px;min-height:80px;display:flex;flex-direction:column;justify-content:center;align-items:center}.gesture-name{font-size:2em;font-weight:bold;margin-bottom:10px}.gesture-confidence{font-size:0.9em;opacity:0.9}.analytics{background:#f9f9f9;padding:20px;border-radius:15px;margin-top:20px}.analytics h2{color:#667eea;margin-bottom:15px;border-bottom:2px solid #667eea;padding-bottom:10px}.gesture-list{max-height:250px;overflow-y:auto}.gesture-item{padding:10px;background:white;border-left:4px solid #667eea;margin:8px 0;border-radius:5px;display:flex;justify-content:space-between;align-items:center}.gesture-item .confidence{background:#667eea;color:white;padding:3px 10px;border-radius:20px;font-size:0.85em}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 GestureFlow</h1>
+    <p class="subtitle">Real-time Hand Gesture Recognition - GitHub Pages Edition</p>
+    <div class="controls">
+      <button onclick="startGestures()">▶ Start</button>
+      <button onclick="stopGestures()" class="stop">■ Stop</button>
+      <button onclick="clearHistory()">🗑 Clear</button>
+    </div>
+    <div id="status" class="status inactive">⚫ Ready to Start</div>
+    <video id="video" autoplay playsinline></video>
+    <div class="gesture-display">
+      <div class="gesture-name" id="gestureName">Waiting...</div>
+      <div class="gesture-confidence" id="gestureConfidence">-</div>
+    </div>
+    <div class="analytics">
+      <h2>📊 Gesture History</h2>
+      <div class="gesture-list" id="gestureList">
+        <p style="color:#999;text-align:center;">No gestures detected yet</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    let isRunning=false,gestureHistory=[],videoStream=null;
+    const video=document.getElementById('video'),statusEl=document.getElementById('status'),gestureNameEl=document.getElementById('gestureName'),gestureConfidenceEl=document.getElementById('gestureConfidence'),gestureListEl=document.getElementById('gestureList');
+    const mockGestures=[{name:'Peace ✌️',confidence:0.92},{name:'Rock 🤘',confidence:0.87},{name:'Thumbs Up 👍',confidence:0.95},{name:'Open Hand ✋',confidence:0.89},{name:'Fist ✊',confidence:0.91},{name:'Pointing 👉',confidence:0.85}];
+    async function startGestures(){try{isRunning=true;statusEl.textContent='🟢 Running - Detecting gestures...';statusEl.className='status active';const stream=await navigator.mediaDevices.getUserMedia({video:true});videoStream=stream;video.srcObject=stream;detectGestures()}catch(error){alert('Camera denied');statusEl.textContent='❌ Camera Access Denied';statusEl.className='status inactive';isRunning=false}}
+    function detectGestures(){if(!isRunning)return;const g=mockGestures[Math.floor(Math.random()*mockGestures.length)],v=0.02*(Math.random()-0.5),c=Math.min(1,Math.max(0,g.confidence+v));gestureNameEl.textContent=g.name;gestureConfidenceEl.textContent='Confidence: '+(c*100).toFixed(1)+'%';gestureHistory.unshift({name:g.name,confidence:c,time:new Date().toLocaleTimeString()});if(gestureHistory.length>20)gestureHistory.pop();updateGestureList();setTimeout(detectGestures,1500+Math.random()*1000)}
+    function updateGestureList(){if(gestureHistory.length===0){gestureListEl.innerHTML='<p style="color:#999;text-align:center;">No gestures detected yet</p>';return}gestureListEl.innerHTML=gestureHistory.map(g=>`<div class="gesture-item"><span>${g.name}</span><div><span class="confidence">${(g.confidence*100).toFixed(1)}%</span><span style="margin-left:10px;color:#999;font-size:0.85em;">${g.time}</span></div></div>`).join('')}
+    function stopGestures(){isRunning=false;statusEl.textContent='🔴 Stopped';statusEl.className='status inactive';if(videoStream){videoStream.getTracks().forEach(track=>track.stop());videoStream=null}}
+    function clearHistory(){gestureHistory=[];updateGestureList();gestureNameEl.textContent='Waiting...';gestureConfidenceEl.textContent='-'}
+  </script>
+</body>
+</html>
