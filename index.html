@@ -1,1 +1,244 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>🎯 GestureFlow</title><script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script><script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script><script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);min-height:100vh;display:flex;flex-direction:column}header{background:rgba(0,0,0,0.3);color:#fff;padding:20px;text-align:center}h1{font-size:2.5em;margin-bottom:5px}p{font-size:0.95em}.main{display:flex;gap:20px;padding:20px;flex:1;max-width:1400px;margin:0 auto;width:100%}#canvas{background:#000;border-radius:10px;width:100%;max-width:600px;cursor:pointer}.video-panel{flex:1;background:#fff;border-radius:15px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,0.2)}.stats-panel{flex:1;background:#fff;border-radius:15px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,0.2);overflow-y:auto}h2{color:#667eea;margin-bottom:15px}button{background:#667eea;color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;font-weight:bold;margin-right:10px;transition:all 0.3s}button:hover{background:#764ba2;transform:translateY(-2px)}button.stop{background:#ff6b6b}button.clear{background:#47b881}.stat-box{background:#f5f5f5;padding:15px;border-radius:10px;margin-bottom:15px;text-align:center}.stat-value{font-size:2em;font-weight:bold;color:#667eea}.gesture-item{background:#f9f9f9;padding:10px;border-left:4px solid #667eea;margin-bottom:10px;border-radius:5px}.error{color:#ff6b6b;padding:15px;background:#ffe0e0;border-radius:10px;margin-bottom:15px}@media(max-width:768px){.main{flex-direction:column}#canvas{max-width:100%}}</style></head><body><header><h1>🎯 GestureFlow</h1><p>Real-time Hand Gesture Recognition</p></header><div class="main"><div class="video-panel"><h2>📹 Hand Detection</h2><canvas id="canvas" width="600" height="500"></canvas><div style="margin-top:15px"><button id="startBtn" onclick="startCamera()">▶ Start</button><button id="stopBtn" onclick="stopCamera()" class="stop" style="display:none">■ Stop</button><button onclick="clearHistory()" class="clear">🗑 Clear</button></div><div id="error" class="error" style="display:none"></div></div><div class="stats-panel"><h2>📊 Statistics</h2><div class="stat-box"><div style="color:#666;font-size:0.9em">Current Gesture</div><div class="stat-value" id="gesture">-</div><div style="font-size:0.85em;color:#999;margin-top:5px" id="conf">Confidence: -</div></div><div class="stat-box"><div style="color:#666;font-size:0.9em">Hands Detected</div><div class="stat-value" id="handCount">0</div></div><div class="stat-box"><div style="color:#666;font-size:0.9em">Total Detections</div><div class="stat-value" id="totalCount">0</div></div><h2 style="margin-top:20px">📊 History</h2><div id="history"><p style="color:#999;text-align:center">No detections yet</p></div></div></div><script>const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');let camera=null,hands=null,isRunning=false,detections=[];async function startCamera(){try{document.getElementById('error').style.display='none';if(!hands){hands=new Hands({locateFile:f=>{return`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`}});hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.5,minTrackingConfidence:0.5});hands.onResults(onResults)}if(!camera){camera=new Camera(canvas,{onFrame:async()=>{if(isRunning){await hands.send({image:canvas})}},width:canvas.width,height:canvas.height});await camera.initialize()}isRunning=true;await camera.start();document.getElementById('startBtn').style.display='none';document.getElementById('stopBtn').style.display='inline-block';document.getElementById('gesture').textContent='Detecting...'}catch(e){showError('Camera Error: '+e.message)}}function onResults(r){ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(r.image,0,0);if(r.multiHandLandmarks&&r.multiHandLandmarks.length>0){document.getElementById('handCount').textContent=r.multiHandLandmarks.length;for(let h of r.multiHandLandmarks){drawHand(h)}const g=detectGesture(r.multiHandLandmarks[0]);if(g){document.getElementById('gesture').textContent=g.name;document.getElementById('conf').textContent=`Confidence: ${(g.conf*100).toFixed(0)}%`;detections.unshift({name:g.name,time:new Date().toLocaleTimeString()});if(detections.length>20)detections.pop();document.getElementById('totalCount').textContent=detections.length;updateHistory()}}else{document.getElementById('handCount').textContent='0';document.getElementById('gesture').textContent='-';document.getElementById('conf').textContent='Confidence: -'}ctx.restore()}function drawHand(landmarks){for(let i=0;i<landmarks.length;i++){const p=landmarks[i];ctx.fillStyle='#FF0000';ctx.beginPath();ctx.arc(p.x*canvas.width,p.y*canvas.height,3,0,Math.PI*2);ctx.fill()}const pairs=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];ctx.strokeStyle='#00FF00';ctx.lineWidth=2;for(let[a,b]of pairs){const p1=landmarks[a],p2=landmarks[b];ctx.beginPath();ctx.moveTo(p1.x*canvas.width,p1.y*canvas.height);ctx.lineTo(p2.x*canvas.width,p2.y*canvas.height);ctx.stroke()}}function detectGesture(hand){if(!hand||hand.length<21)return null;const t4=hand[4],t2=hand[2],i8=hand[8],i5=hand[5],m12=hand[12],m9=hand[9],r16=hand[16],r13=hand[13],p20=hand[20],p17=hand[17];const isT=t4.y<t2.y,isI=i8.y<i5.y,isM=m12.y<m9.y,isR=r16.y<r13.y,isP=p20.y<p17.y;const up=[isI,isM,isR,isP].filter(Boolean).length;if(isT&&up===0)return{name:'Thumbs Up 👍',conf:0.95};if(isT&&isI&&isM&&!isR&&!isP)return{name:'Peace ✌️',conf:0.92};if(!isI&&!isM&&!isR&&!isP&&!isT)return{name:'Fist ✊',conf:0.90};if(isI&&isM&&isR&&isP&&isT)return{name:'Open Hand ✋',conf:0.88};if(isI&&isP&&!isM&&!isR&&isT)return{name:'Rock 🤘',conf:0.85};if(isI&&isM&&!isR&&!isP&&!isT)return{name:'OK 👌',conf:0.87};return{name:'Hand',conf:0.75}}function updateHistory(){const h=document.getElementById('history');if(detections.length===0){h.innerHTML='<p style="color:#999;text-align:center">No detections yet</p>';return}h.innerHTML=detections.slice(0,10).map(d=>`<div class="gesture-item"><strong>${d.name}</strong><br/><small style="color:#999">${d.time}</small></div>`).join('')}async function stopCamera(){isRunning=false;if(camera)await camera.stop();document.getElementById('startBtn').style.display='inline-block';document.getElementById('stopBtn').style.display='none';document.getElementById('gesture').textContent='-'}function clearHistory(){detections=[];document.getElementById('totalCount').textContent='0';updateHistory()}function showError(msg){const e=document.getElementById('error');e.textContent=msg;e.style.display='block'}</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>🎏 GestureFlow</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial,sans-serif; background: linear-gradient(135deg,#667eea,#764ba2); min-height: 100vh; display: flex; flex-direction: column; }
+        header { background: rgba(0,0,0,0.3); color: #fff; padding: 20px; text-align: center; }
+        h1 { font-size: 2.5em; margin-bottom: 5px; }
+        p { font-size: 0.95em; }
+        .main { display: flex; gap: 20px; padding: 20px; flex: 1; max-width: 1400px; margin: 0 auto; width: 100%; }
+        #canvas { background: #000; border-radius: 10px; width: 100%; max-width: 600px; cursor: pointer; }
+        .video-panel { flex: 1; background: #fff; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .stats-panel { flex: 1; background: #fff; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow-y: auto; }
+        h2 { color: #667eea; margin-bottom: 15px; }
+        button { background: #667eea; color: #fff; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-right: 10px; transition: all 0.3s; }
+        button:hover { background: #764ba2; transform: translateY(-2px); }
+        button.stop { background: #ff6b6b; }
+        button.clear { background: #47b881; }
+        .stat-box { background: #f5f5f5; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: center; }
+        .stat-value { font-size: 2em; font-weight: bold; color: #667eea; }
+        .gesture-item { background: #f9f9f9; padding: 10px; border-left: 4px solid #667eea; margin-bottom: 10px; border-radius: 5px; }
+        .error { color: #ff6b6b; padding: 15px; background: #ffe0e0; border-radius: 10px; margin-bottom: 15px; }
+        @media(max-width:768px) { .main { flex-direction: column; } #canvas { max-width: 100%; } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎏 GestureFlow</h1>
+        <p>Real-time Hand Gesture Recognition with MediaPipe</p>
+    </header>
+    <div class="main">
+        <div class="video-panel">
+            <h2>📹 Live Hand Detection</h2>
+            <canvas id="canvas" width="600" height="500"></canvas>
+            <div style="margin-top:15px">
+                <button id="startBtn" onclick="startCamera()">▶ Start Detection</button>
+                <button id="stopBtn" onclick="stopCamera()" class="stop" style="display:none">■ Stop</button>
+                <button onclick="clearHistory()" class="clear">🗑 Clear History</button>
+            </div>
+            <div id="error" class="error" style="display:none"></div>
+        </div>
+        <div class="stats-panel">
+            <h2>📈 Statistics</h2>
+            <div class="stat-box">
+                <div style="color:#666;font-size:0.9em">⚫ Status</div>
+                <div class="stat-value" id="statusBar">⚫ Not Started</div>
+            </div>
+            <div class="stat-box">
+                <div style="color:#666;font-size:0.9em">Current Gesture</div>
+                <div class="stat-value" id="currentGesture">-</div>
+                <div style="font-size:0.85em;color:#999;margin-top:5px" id="confidence">Confidence: -</div>
+            </div>
+            <div style="display:flex;gap:15px">
+                <div class="stat-box" style="flex:1">
+                    <div style="color:#666;font-size:0.9em">Hands Detected</div>
+                    <div class="stat-value" id="handCount">0</div>
+                </div>
+                <div class="stat-box" style="flex:1">
+                    <div style="color:#666;font-size:0.9em">Total Detections</div>
+                    <div class="stat-value" id="totalDetections">0</div>
+                </div>
+            </div>
+            <h2 style="margin-top:20px">📈 Gesture History</h2>
+            <div id="gestureHistory" style="max-height:200px;overflow-y:auto">
+                <p style="color:#999;text-align:center">No gestures detected yet. Show your hands to the camera!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let camera = null;
+        let hands = null;
+        let isRunning = false;
+        let detections = [];
+
+        async function startCamera() {
+            try {
+                document.getElementById('error').style.display = 'none';
+
+                if (!hands) {
+                    hands = new Hands({
+                        locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+                    });
+                    hands.setOptions({
+                        maxNumHands: 2,
+                        modelComplexity: 1,
+                        minDetectionConfidence: 0.5,
+                        minTrackingConfidence: 0.5
+                    });
+                    hands.onResults(onResults);
+                }
+
+                if (!camera) {
+                    camera = new Camera(canvas, {
+                        onFrame: async () => {
+                            if (isRunning) {
+                                await hands.send({ image: canvas });
+                            }
+                        },
+                        width: 600,
+                        height: 500
+                    });
+                }
+
+                isRunning = true;
+                await camera.start();
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'inline-block';
+                document.getElementById('statusBar').textContent = '🟢 Detecting...';
+            } catch (e) {
+                showError('Camera Error: ' + e.message);
+            }
+        }
+
+        function onResults(results) {
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(results.image, 0, 0);
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                document.getElementById('handCount').textContent = results.multiHandLandmarks.length;
+
+                for (let hand of results.multiHandLandmarks) {
+                    drawHand(hand);
+                }
+
+                const gesture = detectGesture(results.multiHandLandmarks[0]);
+                if (gesture) {
+                    document.getElementById('currentGesture').textContent = gesture.name;
+                    document.getElementById('confidence').textContent = `Confidence: ${(gesture.conf * 100).toFixed(0)}%`;
+
+                    detections.unshift({
+                        name: gesture.name,
+                        time: new Date().toLocaleTimeString()
+                    });
+                    if (detections.length > 20) detections.pop();
+                    document.getElementById('totalDetections').textContent = detections.length;
+                    updateHistory();
+                }
+            } else {
+                document.getElementById('handCount').textContent = '0';
+                document.getElementById('currentGesture').textContent = '-';
+                document.getElementById('confidence').textContent = 'Confidence: -';
+            }
+            ctx.restore();
+        }
+
+        function drawHand(landmarks) {
+            for (let i = 0; i < landmarks.length; i++) {
+                const p = landmarks[i];
+                ctx.fillStyle = '#FF0000';
+                ctx.beginPath();
+                ctx.arc(p.x * canvas.width, p.y * canvas.height, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const pairs = [
+                [0, 1], [1, 2], [2, 3], [3, 4],
+                [0, 5], [5, 6], [6, 7], [7, 8],
+                [0, 9], [9, 10], [10, 11], [11, 12],
+                [0, 13], [13, 14], [14, 15], [15, 16],
+                [0, 17], [17, 18], [18, 19], [19, 20],
+                [5, 9], [9, 13], [13, 17]
+            ];
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 2;
+            for (let [a, b] of pairs) {
+                const p1 = landmarks[a];
+                const p2 = landmarks[b];
+                ctx.beginPath();
+                ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+                ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+                ctx.stroke();
+            }
+        }
+
+        function detectGesture(hand) {
+            if (!hand || hand.length < 21) return null;
+
+            const t4 = hand[4], t2 = hand[2];
+            const i8 = hand[8], i5 = hand[5];
+            const m12 = hand[12], m9 = hand[9];
+            const r16 = hand[16], r13 = hand[13];
+            const p20 = hand[20], p17 = hand[17];
+
+            const isT = t4.y < t2.y;
+            const isI = i8.y < i5.y;
+            const isM = m12.y < m9.y;
+            const isR = r16.y < r13.y;
+            const isP = p20.y < p17.y;
+
+            const up = [isI, isM, isR, isP].filter(Boolean).length;
+
+            if (isT && up === 0) return { name: 'Thumbs Up 👍', conf: 0.95 };
+            if (isT && isI && isM && !isR && !isP) return { name: 'Peace ✌️', conf: 0.92 };
+            if (!isI && !isM && !isR && !isP && !isT) return { name: 'Fist ✊', conf: 0.90 };
+            if (isI && isM && isR && isP && isT) return { name: 'Open Hand 👋', conf: 0.88 };
+            if (isI && isP && !isM && !isR && isT) return { name: 'Rock 🤘', conf: 0.85 };
+            if (isI && isM && !isR && !isP && !isT) return { name: 'OK 👌', conf: 0.87 };
+            return { name: 'Hand', conf: 0.75 };
+        }
+
+        function updateHistory() {
+            const h = document.getElementById('gestureHistory');
+            if (detections.length === 0) {
+                h.innerHTML = '<p style="color:#999;text-align:center">No detections yet</p>';
+                return;
+            }
+            h.innerHTML = detections.slice(0, 10).map(d => 
+                `<div class="gesture-item"><strong>${d.name}</strong><br/><small style="color:#999">${d.time}</small></div>`
+            ).join('');
+        }
+
+        async function stopCamera() {
+            isRunning = false;
+            if (camera) await camera.stop();
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('statusBar').textContent = '⚫ Not Started';
+            document.getElementById('currentGesture').textContent = '-';
+        }
+
+        function clearHistory() {
+            detections = [];
+            document.getElementById('totalDetections').textContent = '0';
+            updateHistory();
+        }
+
+        function showError(msg) {
+            const e = document.getElementById('error');
+            e.textContent = msg;
+            e.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
